@@ -1,7 +1,9 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+from flask import Flask, render_template, request, session, redirect, url_for, abort
+from database.db import init_db, seed_db, create_user, get_user_by_email
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'dev-secret-change-in-prod'  # TODO: move to env var before deploy
 
 with app.app_context():
     init_db()
@@ -17,8 +19,23 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+        if not name or not email or not password or not confirm_password:
+            return render_template("register.html", error="All fields are required.")
+        if password != confirm_password:
+            return render_template("register.html", error="Passwords do not match.")
+        if get_user_by_email(email):
+            return render_template("register.html", error="An account with that email already exists.")
+        password_hash = generate_password_hash(password)
+        new_id = create_user(name, email, password_hash)
+        session["user_id"] = new_id
+        return redirect(url_for("profile"))
     return render_template("register.html")
 
 
