@@ -25,8 +25,13 @@
         </p>
 
         <div class="hero-v2-actions">
+            {% if session.get("user_id") %}
+            <a href="{{ url_for('profile') }}" class="hero-v2-btn">Go to my profile</a>
+            <a href="{{ url_for('logout') }}" class="hero-v2-btn">Sign out</a>
+            {% else %}
             <a href="{{ url_for('register') }}" class="hero-v2-btn">Create free account</a>
             <a href="#" id="open-demo-modal" class="hero-v2-btn">See how it works</a>
+            {% endif %}
         </div>
 
         <div class="hero-v2-mock">
@@ -105,7 +110,11 @@
     <div class="cta-inner">
         <h2 class="cta-title">Ready to take control?</h2>
         <p class="cta-body">Join thousands of people who track their expenses with Spendly.</p>
+        {% if session.get("user_id") %}
+        <a href="{{ url_for('logout') }}" class="btn-primary">Sign out</a>
+        {% else %}
         <a href="{{ url_for('register') }}" class="btn-primary">Create free account</a>
+        {% endif %}
     </div>
 </section>
 
