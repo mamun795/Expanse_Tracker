@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, render_template, request, session, redirect, url_for, abort
 from database.db import init_db, seed_db, create_user, get_user_by_email, get_user_by_id
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -81,7 +82,51 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    db_user = get_user_by_id(session["user_id"])
+    if db_user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    try:
+        created = datetime.strptime(db_user["created_at"][:19], "%Y-%m-%d %H:%M:%S")
+        member_since = created.strftime("%B %Y")
+    except (TypeError, ValueError):
+        member_since = "Recently"
+
+    parts = db_user["name"].split()
+    initials = parts[0][0].upper() + (parts[1][0].upper() if len(parts) > 1 else "")
+    user = {
+        "name": db_user["name"],
+        "email": db_user["email"],
+        "member_since": member_since,
+        "initials": initials,
+    }
+
+    stats = [
+        {"label": "Total Spent",  "value": "৳8,450", "sub": "all time",       "sub_class": ""},
+        {"label": "Transactions", "value": "24",      "sub": "logged",         "sub_class": ""},
+        {"label": "Top Category", "value": "Food",    "sub": "most frequent",  "sub_class": "mock-stat-sub--success"},
+    ]
+
+    transactions = [
+        {"date": "June 22, 2026", "description": "Grocery run",            "category": "Food",          "amount": "৳850"},
+        {"date": "June 18, 2026", "description": "Electricity bill",       "category": "Bills",         "amount": "৳1,200"},
+        {"date": "June 15, 2026", "description": "Monthly bus pass",       "category": "Transport",     "amount": "৳450"},
+        {"date": "June 10, 2026", "description": "Streaming subscription", "category": "Entertainment", "amount": "৳180"},
+    ]
+
+    categories = [
+        {"name": "Food",      "amount": "৳2,900", "bar_class": "mock-cat-bar--orange", "width_class": "bar-w-65"},
+        {"name": "Bills",     "amount": "৳1,850", "bar_class": "mock-cat-bar--blue",   "width_class": "bar-w-42"},
+        {"name": "Transport", "amount": "৳1,200", "bar_class": "mock-cat-bar--purple", "width_class": "bar-w-28"},
+        {"name": "Shopping",  "amount": "৳950",   "bar_class": "mock-cat-bar--green",  "width_class": "bar-w-22"},
+    ]
+
+    return render_template("profile.html", user=user, stats=stats,
+                           transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
